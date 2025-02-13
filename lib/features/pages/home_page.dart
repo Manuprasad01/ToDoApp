@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import 'package:todo_app/features/pages/settings_page.dart';
-import 'package:todo_app/features/controller/user_provider.dart';
 import '../controller/category_provider.dart';
+import '../controller/user_provider.dart';
+import 'settings_page.dart';
 import 'task_page.dart';
 
 class CategoriesPage extends StatefulWidget {
@@ -14,9 +15,10 @@ class CategoriesPage extends StatefulWidget {
 }
 
 class _CategoriesPageState extends State<CategoriesPage> {
-  String searchQuery = "";
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.tertiary,
       appBar: AppBar(
@@ -36,23 +38,22 @@ class _CategoriesPageState extends State<CategoriesPage> {
                   radius: 10,
                   backgroundImage: userProvider.imageFile != null
                       ? FileImage(userProvider.imageFile!)
-                      : AssetImage('assets/default_profile.jpg')
+                      : const AssetImage('assets/default_profile.jpg')
                           as ImageProvider,
                 ),
               ),
             );
           },
         ),
-        title: Text(
+        title: const Text(
           'Categories',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.search),
+            icon: const Icon(Icons.search),
             onPressed: () {
-              // Implement search feature if needed
               showSearch(
                 context: context,
                 delegate: CategorySearchDelegate(),
@@ -70,7 +71,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
               elevation: 2,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
-              child: Padding(
+              child: const Padding(
                 padding: EdgeInsets.all(12),
                 child: Row(
                   children: [
@@ -93,28 +94,38 @@ class _CategoriesPageState extends State<CategoriesPage> {
 
           // Categories Grid
           Expanded(
-            child: Consumer<CategoryProvider>(
-              builder: (context, categoryProvider, child) {
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('categories')
+                  .where('userId',
+                      isEqualTo: user?.uid) // User-specific categories
+                  .snapshots(),
+              builder: (context, snapshot) {
+                final categories = snapshot.data?.docs ?? [];
+
                 return GridView.builder(
-                  padding: EdgeInsets.all(16),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
                   ),
-                  itemCount: categoryProvider.categories.length + 1,
+                  itemCount: categories.isEmpty ? 1 : categories.length + 1,
                   itemBuilder: (context, index) {
                     if (index == 0) {
                       return GestureDetector(
                         onTap: () => _addCategoryDialog(context),
-                        child: Card(
+                        child: const Card(
                           child:
                               Center(child: Icon(Icons.add_circle, size: 40)),
                         ),
                       );
                     }
 
-                    final category = categoryProvider.categories[index - 1];
+                    final category = categories[index - 1];
+                    final categoryId = category.id;
+                    final categoryName = category['name'];
+                    final categoryEmoji = category['emoji'];
 
                     return GestureDetector(
                       onTap: () {
@@ -122,37 +133,39 @@ class _CategoriesPageState extends State<CategoriesPage> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => TasksPage(
-                                categoryId: category['id'],
-                                categoryName: category['name']),
+                                categoryId: categoryId,
+                                categoryName: categoryName),
                           ),
                         );
                       },
+                      onLongPress: () =>
+                          _deleteCategoryDialog(context, categoryId),
                       child: Card(
                         elevation: 2,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)),
                         child: Padding(
-                          padding: EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(10),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(category['emoji'],
-                                  style: TextStyle(fontSize: 30)),
-                              SizedBox(height: 8),
-                              Text(category['name'],
-                                  style: TextStyle(fontSize: 18)),
-                              SizedBox(height: 4),
+                              Text(categoryEmoji,
+                                  style: const TextStyle(fontSize: 30)),
+                              const SizedBox(height: 8),
+                              Text(categoryName,
+                                  style: const TextStyle(fontSize: 18)),
+                              const SizedBox(height: 4),
                               FutureBuilder<int>(
-                                future: _getTaskCount(category['id']),
+                                future: _getTaskCount(categoryId),
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState ==
                                       ConnectionState.waiting) {
-                                    return Text("Loading...",
+                                    return const Text("Loading...",
                                         style: TextStyle(fontSize: 14));
                                   }
                                   return Text(
                                     "${snapshot.data ?? 0} tasks",
-                                    style: TextStyle(fontSize: 14),
+                                    style: const TextStyle(fontSize: 14),
                                   );
                                 },
                               ),
@@ -172,37 +185,68 @@ class _CategoriesPageState extends State<CategoriesPage> {
   }
 
   void _addCategoryDialog(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     TextEditingController nameController = TextEditingController();
     TextEditingController emojiController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Add Category'),
+        title: const Text('Add Category'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
                 controller: nameController,
-                decoration: InputDecoration(hintText: 'Enter category name')),
+                decoration:
+                    const InputDecoration(hintText: 'Enter category name')),
             TextField(
                 controller: emojiController,
-                decoration: InputDecoration(hintText: 'Enter emoji')),
+                decoration: const InputDecoration(hintText: 'Enter emoji')),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
           TextButton(
             onPressed: () {
               if (nameController.text.isNotEmpty &&
                   emojiController.text.isNotEmpty) {
-                Provider.of<CategoryProvider>(context, listen: false)
-                    .addCategory(nameController.text, emojiController.text);
+                FirebaseFirestore.instance.collection('categories').add({
+                  'name': nameController.text,
+                  'emoji': emojiController.text,
+                  'userId': user?.uid, // Store user ID for filtering
+                });
                 Navigator.pop(context);
               }
             },
-            child: Text('Add'),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteCategoryDialog(BuildContext context, String categoryId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Category'),
+        content: const Text('Are you sure you want to delete this category?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              await FirebaseFirestore.instance
+                  .collection('categories')
+                  .doc(categoryId)
+                  .delete();
+              Navigator.pop(context);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

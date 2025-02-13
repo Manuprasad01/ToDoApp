@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:todo_app/core/authentication/pages/forgot_password.dart';
 import 'package:todo_app/core/widgets/custom_button.dart';
 import 'package:todo_app/core/widgets/custom_textfield.dart';
 
@@ -73,7 +74,13 @@ class _LoginState extends State<Login> {
               child: Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
-                      onPressed: () {}, child: Text("Forgot Password?"))),
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => ForgotPassword()));
+                      },
+                      child: Text("Forgot Password?"))),
             ),
             SizedBox(
               height: 20,

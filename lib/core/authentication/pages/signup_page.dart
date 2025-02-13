@@ -56,7 +56,7 @@ class _SignupState extends State<Signup> {
                 style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black)),
+                    color: Theme.of(context).colorScheme.primary)),
             SizedBox(
               height: 30,
             ),

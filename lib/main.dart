@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:provider/provider.dart';
 import 'package:todo_app/features/pages/home_page.dart';
@@ -12,6 +14,8 @@ import 'core/authentication/pages/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  await Hive.openBox('userBox');
   await Firebase.initializeApp();
   runApp(MultiProvider(providers: [
     ChangeNotifierProvider(create: (context) => CategoryProvider()),
@@ -30,7 +34,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
 
       home: _getInitialPage(),
-      // home: WidgetTree(),
+   
     );
   }
 }
@@ -38,10 +42,8 @@ class MyApp extends StatelessWidget {
 Widget _getInitialPage() {
   final user = FirebaseAuth.instance.currentUser;
   if (user != null) {
-    // If the user is logged in, navigate to the Home page
     return CategoriesPage();
   } else {
-    // If the user is not logged in, navigate to the Login page
     return Login();
   }
 }

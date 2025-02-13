@@ -157,7 +157,7 @@ class SettingsPage extends StatelessWidget {
               ),
               ListTile(
                 leading: Icon(Icons.settings),
-                title: Text('General'),
+                title: Text('Mode'),
                 onTap: () {
                   Navigator.push(context,
                       MaterialPageRoute(builder: (context) => DarkMode()));
@@ -166,8 +166,15 @@ class SettingsPage extends StatelessWidget {
               ListTile(
                 leading: Icon(Icons.account_circle),
                 title: Text('Account'),
+                onTap: () {},
+              ),
+              ListTile(
+                leading: Icon(Icons.logout_rounded),
+                title: Text('Logout'),
                 onTap: () {
                   Auth().signOut();
+                  Provider.of<UserProvider>(context, listen: false)
+                      .clearUserData();
                   Navigator.push(context,
                       MaterialPageRoute(builder: (context) => Login()));
                 },
