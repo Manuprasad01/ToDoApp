@@ -1,10 +1,10 @@
 # todo_app
 
 A new Flutter project .<br>
-State Management used Provider
-Firebase and Hive used for Storage
-Theme light mode and dark mode
-authentication using firebase
+State Management used Provider<br>
+Firebase and Hive used for Storage<br>
+Theme light mode and dark mode<br>
+authentication using firebase<br>
 
 ## Getting Started
 
